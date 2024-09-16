@@ -134,7 +134,12 @@ generate_data_glm <- function(n,p,cov_setting=c("ind","comsym","ar1","group","fa
     y <- family$simulate(glm(rep(1,n+ntest)~0,offset = alpha+xbeta,family = family),nsim = 1)
   } else {
     if (family$family=="gaussian") {
-      y <- family$linkinv(alpha+xbeta ) + rnorm(n+ntest,0,1)
+      if (family$link =="log") {
+        mysd <- 0.1
+      } else {
+        mysd <- 1
+      }
+      y <- family$linkinv(alpha+xbeta ) + rnorm(n+ntest,0,mysd)
     } else {
       stop("Family can't be simulated!")
     }

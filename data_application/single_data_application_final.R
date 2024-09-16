@@ -135,6 +135,15 @@ data.frame(predictor=1:ncol(lymphoma_big$x),sum_abs_coef_value=apply(abs(spar_re
   labs(y="sum of absolute coefficients")
 # ggsave(paste0("../plots/spar_coef_lymphoma_big_abs.pdf"), height = 4, width = 8)
 
+# how many of estimated top variables are in the first third
+
+lymph_big_coef <- coef(spar_res_lymphoma_big)
+
+
+mean(order(abs(lymph_big_coef$beta),decreasing = TRUE)[1:ncol(lymphoma$x)]<=ncol(lymphoma$x))
+
+
+
 # # # # # # poisson / gaussian log
 # # # # tribology
 

@@ -15,8 +15,9 @@
 # 5 RP wrapper
 
 # # install.packages("remotes")
-# remotes::install_github("RomanParzer/SPAR@v3.1") # for compatibility with these wrapper functions
+# remotes::install_github("RomanParzer/SPAR@v3.2") # for specific release used in these simulations and applications
 # # remotes::install_github("RomanParzer/SPAR@*release") # for latest release
+# # remotes::install_github("RomanParzer/SPAR") # for current REPO status
 
 pacman::p_load(pls, glmnet, SIS, MASS,SPAR,Matrix,ROCR,metrica,e1071,randomForest)
 

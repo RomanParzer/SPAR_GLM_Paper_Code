@@ -151,7 +151,7 @@ mydf_all %>% filter(cov_setting=="group",act_setting=="medium",
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   # ggh4x::facet_grid2(cov_setting~act_setting, scales = "free_y",independent = "y") +
   # facet_grid(family~p, scales = "free_y",labeller = short_fam_names2) +
-  # coord_cartesian(ylim=c(0,1.0)) +
+  coord_cartesian(ylim=c(0,1.75)) +
   theme(legend.position = "none") +
   labs(y="prediction error")
 
@@ -340,6 +340,8 @@ mydf_time_sum %>%
 
 # # pred / LE / pAUC
 # each act_setting
+
+rank_methods <- methods
 n_showm <- length(rank_methods)
 mydf_all_rank <- mydf_all %>% filter(Method %in% rank_methods) %>% group_by(rep,setting) %>% mutate(rank_pred=rank(pred_error),rank_LE = rank(rMSLE), rank_pAUC = n_showm + 1 - rank(pAUC))
 rank_tab <- mydf_all_rank %>% group_by(Method,family,act_setting) %>% summarise(mean_rank_pred = mean(rank_pred), se_rank_pred = sd(rank_pred)/sqrt(100),
