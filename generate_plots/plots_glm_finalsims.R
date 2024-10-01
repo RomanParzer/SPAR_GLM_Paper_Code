@@ -268,14 +268,11 @@ mydf_all %>% filter(Method %in% show_methods,p==2000,cov_setting=="group",family
 
 
 myp <- c(500,2000,10^4)
-mydf_time_sum_fam <- mydf_all %>% filter(Method %in% rank_methods,act_setting=="medium",cov_setting=="group") %>% 
+mydf_time_sum_fam <- mydf_all %>% filter(Method %in% rank_methods,act_setting=="medium",cov_setting=="group",
+                                         family%in%c("binomial(logit)","binomial(cloglog)")) %>% 
   group_by(Method,p,family) %>%
   summarise(Time=mean(Time)) %>% mutate(is_ref=FALSE)
 mydf_time_sum_fam <- rbind(mydf_time_sum_fam,
-                       data.frame(p=rep(myp,3),
-                                  Time=c(log(myp)*myp/30,myp/30,log(myp)/10),
-                                  Method=c(rep("O(plog(p))",length(myp)),rep("O(p)",length(myp)),rep("O(log(p))",length(myp))),
-                                  is_ref=TRUE,family="poisson(log)"),
                        data.frame(p=rep(myp,3),
                                   Time=c(log(myp)*myp/30,myp/30,log(myp)/10),
                                   Method=c(rep("O(plog(p))",length(myp)),rep("O(p)",length(myp)),rep("O(log(p))",length(myp))),
@@ -283,15 +280,7 @@ mydf_time_sum_fam <- rbind(mydf_time_sum_fam,
                        data.frame(p=rep(myp,3),
                                   Time=c(log(myp)*myp/30,myp/30,log(myp)/10),
                                   Method=c(rep("O(plog(p))",length(myp)),rep("O(p)",length(myp)),rep("O(log(p))",length(myp))),
-                                  is_ref=TRUE,family="binomial(cloglog)"),
-                       data.frame(p=rep(myp,3),
-                                  Time=c(log(myp)*myp/30,myp/30,log(myp)/10),
-                                  Method=c(rep("O(plog(p))",length(myp)),rep("O(p)",length(myp)),rep("O(log(p))",length(myp))),
-                                  is_ref=TRUE,family="gaussian(log)"),
-                       data.frame(p=rep(myp,3),
-                                  Time=c(log(myp)*myp/30,myp/30,log(myp)/10),
-                                  Method=c(rep("O(plog(p))",length(myp)),rep("O(p)",length(myp)),rep("O(log(p))",length(myp))),
-                                  is_ref=TRUE,family="gaussian(identity)")
+                                  is_ref=TRUE,family="binomial(cloglog)")
 )
 mydf_time_sum_fam$Method <- factor(mydf_time_sum_fam$Method,levels=c(rank_methods,"O(plog(p))","O(p)","O(log(p))"))
 mydf_time_sum_fam %>% 
@@ -307,7 +296,7 @@ mydf_time_sum_fam %>%
   theme(legend.position="none") +
   facet_grid(.~family) +
   labs(y="Time in s")
-# ggsave(paste0("../plots/glm_Time_p_families.pdf"), height = 5, width = 10)
+# ggsave(paste0("../plots/glm_Time_p_families.pdf"), height = 3, width = 8)
 
 mydf_time_sum <- mydf_all %>% filter(Method %in% rank_methods,act_setting=="medium",
                                      # family%in%show_families,
@@ -341,7 +330,7 @@ mydf_time_sum %>%
 # # pred / LE / pAUC
 # each act_setting
 
-rank_methods <- methods
+# rank_methods <- methods
 n_showm <- length(rank_methods)
 mydf_all_rank <- mydf_all %>% filter(Method %in% rank_methods) %>% group_by(rep,setting) %>% mutate(rank_pred=rank(pred_error),rank_LE = rank(rMSLE), rank_pAUC = n_showm + 1 - rank(pAUC))
 rank_tab <- mydf_all_rank %>% group_by(Method,family,act_setting) %>% summarise(mean_rank_pred = mean(rank_pred), se_rank_pred = sd(rank_pred)/sqrt(100),
@@ -378,3 +367,58 @@ mydf_all %>% filter(Method %in% show_methods,p==2000,cov_setting=="group",
   labs(y=" ")
 # ggsave(paste0("../plots/glm_ov_pred_families.pdf"), height = 8, width = 8)
 
+
+cols <- c("pred_error", "rMSLE", "pAUC")
+signs <- c(1,1,-1)
+
+nem_ranks <- data.frame()
+for(i in 1:length(cols)){
+  if (i==2) {
+    rk_methods <- rank_methods[-c(6,7)]
+  } else {
+    rk_methods <- rank_methods
+  }
+  tmp <- mydf_all  %>% filter(Method %in% rk_methods) %>%
+    select(Method,rep,setting, "score" = cols[i]) %>%
+    mutate(score = score*signs[i]) %>%
+    pivot_wider(names_from = Method, values_from = score) %>%
+    select(-c(rep,setting)) %>%
+    tsutils::nemenyi(plottype = "none", conf.level = 0.99)
+  tmp2 <- t(rbind("avg_rank" = tmp$means, "lower"= tmp$intervals[1,], "upper"= tmp$intervals[2,]))
+  nem_ranks <- rbind(nem_ranks,data.frame("score" = cols[i],tmp2, Method=row.names(tmp2)))
+}
+
+# str(nem_ranks)
+nem_ranks$Method <- factor(nem_ranks$Method,levels = methods)
+nem_ranks$score <- factor(nem_ranks$score,levels = c("pred_error","rMSLE","pAUC"))
+# require(forcats)
+# nem_ranks %>%
+#   data.frame() %>%
+#   mutate(Method = factor(Method, labels = rank_methods),
+#          Method = fct_relevel(Method, "Ridge","LASSO","AdLASSO","ElNet","SIS","SVM","RF","RP_CW_Ensemble","TARP","SPAR","SPAR CV"),
+#          score = factor(score, labels = c("pred_error","rMSLE","pAUC")),
+#          score = fct_relevel(score, "pred_error","rMSLE","pAUC")
+#          )
+
+
+# Step 2: Identify the method with the highest median for each facet
+nem_ranks_high <- nem_ranks %>%
+  group_by(score) %>%
+  mutate(is_best = ifelse(lower <= min(upper, na.rm = TRUE), TRUE, FALSE)) %>%
+  ungroup()
+
+# Step 3: Join this information back to the original data
+nem_ranks_high <- left_join(nem_ranks, nem_ranks_high)
+
+p_test <- ggplot(nem_ranks_high, aes(x = Method, y = avg_rank, color = is_best)) +
+  geom_point(position = position_dodge(0.5), size = 0.5) +
+  geom_errorbar(aes(ymin = lower, ymax = upper),
+                width = 0.3, position = position_dodge(0.5)) +
+  facet_grid(score ~ .,scales = "free_y") +
+  # theme_bw() +
+  theme(axis.text.x=element_text(angle=30, hjust=1.1, vjust = 1.05)) +
+  scale_color_manual(values = c("TRUE" = "black", "FALSE" = "darkgray")) +
+  guides(color = "none") +
+  labs(x = "Method", y = "Mean ranks")
+p_test
+# ggsave("../plots/benchmark_ranks.pdf", height = 5, width = 8)

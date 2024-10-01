@@ -31,11 +31,11 @@ reorder_ind <- c(NULL)
 for (i in 1:18) {
   reorder_ind <- c(reorder_ind,i + (0:24)*18)
 }
-plot(spar_res_darwin,"coefs",coef_order = reorder_ind) + 
-  geom_vline(xintercept = 0.5 + 1:17*25,alpha=0.2,linetype=2) +
-  annotate("text",x=0:17*25 + 12,y=40,label=feat_names,angle=90,size=3) +
+plot(spar_res_darwin,"coefs",coef_order = reorder_ind) +
+  geom_vline(xintercept = 0.5 + 1:17*25,linetype=2,size=0.4) +
+  annotate("text",x=0:17*25 + 12,y=35,label=feat_names,angle=90,size=3) +
   labs(fill="coef value")
-# ggsave(paste0("../plots/spar_coef_darwin.pdf"), height = 4, width = 8)
+# ggsave(paste0("../plots/spar_coef_darwin.pdf"), height = 3, width = 8)
 
 # colnames(darwin$x)[reorder_ind]
 
@@ -111,8 +111,10 @@ lymphoma_big <- list(x=cbind(lymphoma$x,
 
 
 set.seed(1234)
-spar_res_lymphoma_big <- spar.cv(lymphoma_big$x,lymphoma_big$y,family=binomial(logit),
+spar_res_lymphoma <- spar.cv(lymphoma$x,lymphoma$y,family=binomial(logit),
                                  nummods=c(10,20,30,50))
+spar_res_lymphoma_big <- spar.cv(lymphoma_big$x,lymphoma_big$y,family=binomial(logit),
+                                  nummods=c(10,20,30,50))
 
 # may need nscreen more than 2n for nicer plot of coefs
 
@@ -135,13 +137,10 @@ data.frame(predictor=1:ncol(lymphoma_big$x),sum_abs_coef_value=apply(abs(spar_re
   labs(y="sum of absolute coefficients")
 # ggsave(paste0("../plots/spar_coef_lymphoma_big_abs.pdf"), height = 4, width = 8)
 
-# how many of estimated top variables are in the first third
-
+# how many of estimated top variables are in the first third; 
+# aroiund 60 %, not super convincing, but prob other methods not better
 lymph_big_coef <- coef(spar_res_lymphoma_big)
-
-
 mean(order(abs(lymph_big_coef$beta),decreasing = TRUE)[1:ncol(lymphoma$x)]<=ncol(lymphoma$x))
-
 
 
 # # # # # # poisson / gaussian log
@@ -226,3 +225,4 @@ plot(spar_res,"coefs",prange = c(30,260)) +
   annotate("text",x=c(45,145,220),y=40,angle=c(90,90,90),label="active") +
   labs(fill="coef value")
 # ggsave(paste0("../plots/spar_coef_sparse_group.pdf"), height = 4, width = 8)
+

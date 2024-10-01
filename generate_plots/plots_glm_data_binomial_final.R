@@ -3,7 +3,7 @@
 
 pacman::p_load(dplyr, ggplot2, tidyr, ggrepel,knitr,kableExtra)
 
-resobj <- readRDS("../saved_results/glm_data_binom_final_nset4_reps100_nmeth20.rds")
+resobj <- readRDS("../saved_results/SPARglm_data_binom_nset4_reps100_nmeth20.rds")
 res <- resobj$res
 methods <- dimnames(res)[[3]]
 resobj$dataset_sizes
@@ -102,7 +102,7 @@ mydf_all %>% filter(Method %in% show_methods,
   facet_grid(.~dataset, scales = "free_y") +
   theme(legend.position = "none") +
   coord_cartesian(ylim=c(0.7,1.0))
-ggsave(paste0("../plots/glm_databinom_AUC.pdf"), height = 6, width = 8)
+# ggsave(paste0("../plots/glm_databinom_AUC.pdf"), height = 6, width = 8)
 
 mydf_all %>% filter(Method %in% show_methods,
                     dataset!="darwin_big",
@@ -213,7 +213,6 @@ mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
 SumTab <- mysumdf %>% pivot_wider(names_from = dataset,values_from = c(3:8),names_vary = "slowest")
 SumTab[,-1] <- round(SumTab[,-1],3)
 SumTab[,1+1:9*2] <- apply(SumTab[,1+1:9*2],2,function(col)paste0("(",col,")"))
-
 SumTab <- cbind(SumTab,readRDS("../saved_results/table_tribology_rMSPE.rds")[,-1])
 colnames(SumTab) <- c("Method",rep(c("mean","se"),10))
 SumTab
@@ -223,9 +222,11 @@ kable(SumTab,format = "latex",booktabs=TRUE) %>%
 
 
 # smaller version with AUC + rMSPE
-kable(SumTab[,-c(6,7,12,13,18,19)],format = "latex",booktabs=TRUE) %>% 
-  add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2,"rMSPE"=2)) %>%
-  add_header_above(c(" "=1, "lymphoma"=4,"lymphoma_big"=4,"darwin"=4,"tribology"=2))
+kable(SumTab[,c(1,20,21,14:17,2:5,8:11)],format = "latex",booktabs=TRUE) %>% 
+  add_header_above(c(" "=1, "rMSPE"=2,"AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
+  add_header_above(c(" "=1, "FTIR spectra"=2,"Darwin"=4,"DLBCL"=4,"DLBCL_extended"=4))
 
 # copy output latex code to latex file
-  
+
+
+kable(t(SumTab[c(4,6,7,10,11),c(1,20,21)]),format = "latex",booktabs=TRUE)
