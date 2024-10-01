@@ -110,7 +110,7 @@ mydf_all %>% filter(Method %in% show_methods,p==2000,cov_setting=="group") %>%
 short_fam_names1 <- labeller(
   family=c(`binomial(cloglog)` = "bin(cll)", `binomial(logit)` = "bin(logit)",`gaussian(identity)` = "gau(id)", 
            `gaussian(log)` = "gau(log)",`poisson(log)` = "poi(log)"),
-  cov_setting=c(`ar1`="ar1",`comsym`="comsym",`group`="group",`ind`="ind"))
+  cov_setting=c(`ar1`="ar1",`comsym`="comsym",`group`="block",`ind`="ind"))
 
 mydf_all %>% filter(Method %in% show_methods,p==2000,act_setting=="medium",
                     #family%in%show_families,
