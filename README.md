@@ -1,5 +1,5 @@
 # SPAR_GLM_Paper_Code
-Reproducible Code to generate all results reported in 'Data-Driven Random Projection for Generalized Linear Models with High-Dimensional Data' by [Parzer, Filzmoser and Vana-Guer 2024](https://doi.org/10.48550/arXiv.2312.00130).
+Reproducible Code to generate all results reported in 'Data-Driven Random Projection and Screening for High-Dimensional Generalized Linear Models' by [Parzer, Filzmoser and Vana-Guer 2024](https://arxiv.org/abs/2410.00971).
 
 This repository consists of the following folders with described contents.
 
