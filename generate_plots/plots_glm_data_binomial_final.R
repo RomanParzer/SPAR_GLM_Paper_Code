@@ -171,6 +171,10 @@ mydf_all %>% filter(Method %in% show_methods,
   theme(legend.position = "none") +
   scale_y_log10()
 
+print(mydf_all %>% filter(Method %in% show_methods,
+                    dataset!="darwin_big",
+                    link=="logit") %>% group_by(dataset,Method) %>% summarize(med_time=median(Time)),
+      n=30)
 
 # # rank tables, combine with tribology
 

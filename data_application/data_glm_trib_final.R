@@ -80,7 +80,9 @@ clusterEvalQ(my.cluster, {
 })
 # j <- 1
 # i <- 1
-parres <- foreach(j = 1:(nset)) %:%
+
+# k <- 15
+foreach(j = 1:(nset)) %:%
 foreach(i=1:nrep) %dopar% {
   parresi <- array(c(0),dim=c(nmeas,nmethods,3))
   
@@ -100,8 +102,8 @@ foreach(i=1:nrep) %dopar% {
     rMSPE_const <- mean((ytest-mean(y))^2)
     
     family <- poisson(log)
-    rDev_const <- sum(family$dev.resids(ytest,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),ntest),1))
-    rDev_const_tr <- sum(family$dev.resids(y,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),n),1))
+    rDev_const <- sum(family$dev.resids(ytest,rep(mean(y),ntest),1))
+    rDev_const_tr <- sum(family$dev.resids(y,rep(mean(y),n),1))
     
     for (k in 1:nmethods) {
       set.seed((1234+i)^2 + k)
@@ -187,17 +189,18 @@ foreach(i=1:nrep) %dopar% {
     # res[i,,,,j]
     cat(sprintf('Finished rep %d / %d for setting %d / %d at %s.\n',i,nrep,j,nset,Sys.time()))
     warnings()
+    saveRDS(parresi,paste0("../tmp_saved_files/GLM_DataTrib_i",i,"j",j,".rds"))
     parresi
 }
 
 for (j in 1:nset) {
   for (i in 1:nrep) {
-    res[i,,,,j] <- parres[[j]][[i]]
+    res[i,,,,j] <- readRDS(paste0("../tmp_saved_files/GLM_DataTrib_i",i,"j",j,".rds"))
   }
 }
 
 saveRDS(list(res=res,dataset_sizes=dataset_sizes), 
-        file = sprintf("../saved_results/SPARglm_data_trib_nset%d_reps%d_nmeth%d.rds",nset,nrep,nmethods))
+        file = sprintf("../saved_results/SPARglm_data_trib_25_nset%d_reps%d_nmeth%d.rds",nset,nrep,nmethods))
 
 parallel::stopCluster(cl = my.cluster)
 

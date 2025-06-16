@@ -45,7 +45,7 @@ lymphoma <- list(x=as.matrix(DLBCL[,-5470]),y=DLBCL[,5470])
 # mean(lymphoma$y)
 
 set.seed(1234)
-lymphoma_big <- list(x=cbind(lymphoma$x,lymphoma$x[sample(length(lymphoma$y)),],lymphoma$x[sample(length(lymphoma$y)),]),y=lymphoma$y)
+lymphoma_big <- list(x=cbind(lymphoma$x,lymphoma$x[sample(length(lymphoma$y)),]),y=lymphoma$y)
 
 darwin_tmp <- read.csv("../data/darwin/data.csv",stringsAsFactors = TRUE)
 darwin_orig <- list(x=as.matrix(darwin_tmp[,-c(1,452)]),y=as.numeric(darwin_tmp$class)-1)
@@ -58,7 +58,7 @@ tmp <- cellWise::DDC(darwin_orig$x,list(returnBigXimp=TRUE,tolProb=0.999,silent=
 # summary(tmp$remX[tmp$indcells])
 darwin <- list(x=tmp$Ximp,y=darwin_orig$y)
 set.seed(1234)
-darwin_big <- list(x=cbind(darwin$x,darwin$x[sample(nrow(darwin$x)),],darwin$x[sample(nrow(darwin$x)),]),y=darwin$y)
+darwin_big <- list(x=cbind(darwin$x,darwin$x[sample(nrow(darwin$x)),]),y=darwin$y)
 
 datasets <- list(lymphoma=lymphoma,
                  lymphoma_big=lymphoma_big,
@@ -89,7 +89,7 @@ clusterEvalQ(my.cluster, {
   source("../functions/glm_methods.R")
 })
 # i <- j <- 1
-parres <- foreach(j = 1:(nset)) %:%
+foreach(j = 1:(nset)) %:%
 foreach(i=1:nrep) %dopar% {
   parresi <- array(c(0),dim=c(nmeas,nmethods,2))
   
@@ -110,8 +110,8 @@ foreach(i=1:nrep) %dopar% {
     rMSPE_const <- mean((ytest-mean(y))^2)
     
     family <- binomial(logit)
-    rDev_const <- sum(family$dev.resids(ytest,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),ntest),1))
-    rDev_const_tr <- sum(family$dev.resids(y,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),n),1))
+    rDev_const <- sum(family$dev.resids(ytest,rep(mean(y),ntest),1))
+    rDev_const_tr <- sum(family$dev.resids(y,rep(mean(y),n),1))
     
     for (k in 1:nmethods) {
       set.seed((1234+i)^2 + k)
@@ -180,17 +180,18 @@ foreach(i=1:nrep) %dopar% {
     # res[i,,,,j]
     cat(sprintf('Finished rep %d / %d for setting %d / %d at %s.\n',i,nrep,j,nset,Sys.time()))
     warnings()
+    saveRDS(parresi,paste0("../tmp_saved_files/GLM_DataBinom_i",i,"j",j,".rds"))
     parresi
 }
 
 for (j in 1:nset) {
   for (i in 1:nrep) {
-    res[i,,,,j] <- parres[[j]][[i]]
+    res[i,,,,j] <- readRDS(paste0("../tmp_saved_files/GLM_DataBinom_i",i,"j",j,".rds"))
   }
 }
 
 saveRDS(list(res=res,dataset_sizes=dataset_sizes), 
-        file = sprintf("../saved_results/SPARglm_data_binom_nset%d_reps%d_nmeth%d.rds",nset,nrep,nmethods))
+        file = sprintf("../saved_results/SPARglm_data_binom_25_nset%d_reps%d_nmeth%d.rds",nset,nrep,nmethods))
 
 parallel::stopCluster(cl = my.cluster)
 

@@ -38,32 +38,32 @@ methods <- list("Ridge"=function(x,y,xtest,family){myElNet(x,y,xtest,alpha=0,fam
 
 measures <- c("AUC","bAcc","Acc","rMSPE","rDev","rDev_tr","rMSLE","pAUC","Precision","Recall","Sign_ratio_Scr","Cor_Scr","NumAct","Time")
 
-simulation_settings <- tibble(n=200, p=c(2000),ntest=200, act_setting="medium", cov_setting=c("group"),
+simulation_settings <- tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("group"),
                               signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                               family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log)))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="sparse", cov_setting=c("group"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="sparse", cov_setting=c("group"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="dense", cov_setting=c("group"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="dense", cov_setting=c("group"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="medium", cov_setting=c("ar1"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("ar1"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="medium", cov_setting=c("comsym"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("comsym"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="medium", cov_setting=c("ind"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("ind"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
@@ -73,7 +73,7 @@ simulation_settings <- rbind(simulation_settings,
                               family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(10000),ntest=200, act_setting="medium", cov_setting=c("group"),
+                             tibble(n=200, p=c(10000),ntest=1000, act_setting="medium", cov_setting=c("group"),
                               signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                               family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
@@ -101,8 +101,6 @@ clusterEvalQ(my.cluster, {
   source("../functions/multi_assign.R")
 })
 
-
-# i <- j <- 1
 
 parres <- foreach(j = 1:nset) %:%
   foreach(i=1:nrep) %dopar% {

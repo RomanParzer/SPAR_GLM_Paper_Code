@@ -45,7 +45,7 @@ myAdLASSO <- function(x,y,xtest,family,type.measure="default") {
 }
 
 # # 2 Elastic Net with alpha
-myElNet <- function(x,y,xtest,family,alpha=3/4,type.measure="default") {
+myElNet <- function(x,y,xtest,family,alpha=1/2,type.measure="default") {
   if (family$family=="binomial" & family$link=="logit") {
     fit_family <- "binomial"
   } else if (family$family=="poisson" & family$link=="log") {
@@ -89,17 +89,21 @@ mySPAR <- function(x,y,xtest,family,doCV=FALSE,
                    type.rpm="cwdatadriven",
                    type.screening="ridge",
                    opt_par="best",
-                   avg_type="link") {
+                   avg_type="link",
+                   mslow=ceiling(log(ncol(x))),
+                   msup=ceiling(nrow(x)/2)) {
   if (!doCV) {
     spar_res <- spar(x,y,family=family,nummods=nummods,nlambda = nlambda,
                      type.measure=type.measure,type.rpm=type.rpm,type.screening=type.screening,
-                     control=list(scr=list(nscreen=nscreen, split_data=split_data)))
+                     control=list(rpm = list(mslow = mslow, msup = msup),
+                                  scr=list(nscreen=nscreen, split_data=split_data)))
     val_sum <- spar_res$val_res
     coef <- coef(spar_res)
   } else {
     spar_res <- spar.cv(x,y,family=family,nummods=nummods,nlambda = nlambda,
                         type.measure=type.measure,type.rpm=type.rpm,type.screening=type.screening,
-                        control=list(scr=list(nscreen=nscreen, split_data=split_data)))
+                        control=list(rpm = list(mslow = mslow, msup = msup),
+                                     scr=list(nscreen=nscreen, split_data=split_data)))
     val_sum <- spar_res$val_sum
     coef <- coef(spar_res,opt_par = opt_par)
   }

@@ -2,7 +2,8 @@ pacman::p_load(Matrix)
 generate_data_glm <- function(n,p,cov_setting=c("ind","comsym","ar1","group","factor","extreme"),
                               family=gaussian("identity"),
                               ntest=0,a=NULL,ind=NULL,beta=NULL,alpha=NULL,signal_strength=2,avg_exp=0.5,
-                              rho=NULL,xmean=rep(0,p)) {
+                              rho=NULL,xmean=rep(0,p),
+                              weight_binom = 1) {
   
   # first select active vars and generate beta
   bSb <- 0
@@ -118,7 +119,7 @@ generate_data_glm <- function(n,p,cov_setting=c("ind","comsym","ar1","group","fa
   # finally generate responses
   if (is.null(alpha)) {
     # set such that we reach avg expected value
-    alpha <- tryCatch( uniroot(function(interc) mean(family$linkinv(interc + xbeta))-avg_exp, c(-max(abs(xbeta))-7,-max(abs(xbeta))+7),extendInt = "yes" )$root,
+    alpha <- tryCatch( uniroot(function(interc) mean(family$linkinv(interc + xbeta))-avg_exp, c(-mean(abs(xbeta))-5,-mean(abs(xbeta))+5),extendInt = "yes" )$root,
                        error=function(error_message) {
                          message(paste0("Error in uniroot for alpha: ",error_message))
                          return(0)
@@ -131,7 +132,7 @@ generate_data_glm <- function(n,p,cov_setting=c("ind","comsym","ar1","group","fa
   #       1/(1+exp(-alpha-xbeta)))
   
   if ("simulate" %in% names(family)) {
-    y <- family$simulate(glm(rep(1,n+ntest)~0,offset = alpha+xbeta,family = family),nsim = 1)
+    y <- family$simulate(glm(rep(1,n+ntest)~0,offset = alpha+xbeta,family = family,weights = rep(weight_binom,n+ntest)),nsim = 1)
   } else {
     if (family$family=="gaussian") {
       if (family$link =="log") {

@@ -5,28 +5,28 @@ source("../functions/glm_methods.R")
 source("../functions/multi_assign.R")
 
 # compare prediction performance (AUC) and link estimation (MSLE) of different random projections
-simulation_settings <- tibble(n=200, p=c(2000),ntest=200, act_setting="medium", cov_setting=c("group"),
+simulation_settings <- tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("group"),
                               signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                               family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log)))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="sparse", cov_setting=c("group"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="sparse", cov_setting=c("group"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(2000),ntest=200, act_setting="dense", cov_setting=c("group"),
+                             tibble(n=200, p=c(2000),ntest=1000, act_setting="dense", cov_setting=c("group"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(500),ntest=200, act_setting="medium", cov_setting=c("group"),
+                             tibble(n=200, p=c(500),ntest=1000, act_setting="medium", cov_setting=c("group"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
 simulation_settings <- rbind(simulation_settings,
-                             tibble(n=200, p=c(10000),ntest=200, act_setting="medium", cov_setting=c("group"),
+                             tibble(n=200, p=c(10000),ntest=1000, act_setting="medium", cov_setting=c("group"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
