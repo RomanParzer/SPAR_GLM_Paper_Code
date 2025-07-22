@@ -3,7 +3,7 @@
 
 pacman::p_load(dplyr, ggplot2, tidyr, ggrepel,knitr,kableExtra)
 
-resobj <- readRDS("../saved_results/SPARglm_sims_nset40_reps100_nmeth19.rds")
+resobj <- readRDS("../saved_results/SPARglm_sims_25_nset40_reps100_nmeth19.rds")
 res <- resobj
 
 methods <- dimnames(res)[[3]]
@@ -76,7 +76,7 @@ mydf_all$Method <- factor(mydf_all$Method,levels = methods)
 
 # plot families pred
 mydf_all %>% filter(Method %in% methods,p==2000,cov_setting=="group") %>%
-  ggplot(aes(x=Method,y=pred_error,fill=Method)) +
+  ggplot(aes(x=Method,y=rMSPE,fill=Method)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   # ggh4x::facet_grid2(cov_setting~act_setting, scales = "free_y",independent = "y") +
@@ -123,7 +123,7 @@ mydf_all %>% filter(Method %in% show_methods,p==2000,act_setting=="medium",
   # coord_cartesian(ylim=c(0,1.0)) +
   theme(legend.position = "none") +
   labs(y="prediction error")
-# ggsave(paste0("../plots/glm_pred_error_cov_settings_med.pdf"), height = 5, width = 8)
+# ggsave(paste0("../plots/glm_pred_error_cov_settings_med.pdf"), height = 6, width = 8)
 
 short_fam_names2 <- labeller(
   family=c(`binomial(cloglog)` = "bin(cll)", `binomial(logit)` = "bin(logit)",`gaussian(identity)` = "gau(id)", 
@@ -141,19 +141,19 @@ mydf_all %>% filter(Method %in% show_methods,cov_setting=="group",act_setting=="
   # coord_cartesian(ylim=c(0,1.0)) +
   theme(legend.position = "none") +
   labs(y="prediction error")
-# ggsave(paste0("../plots/glm_pred_error_p.pdf"), height = 5, width = 8)
+# ggsave(paste0("../plots/glm_pred_error_p.pdf"), height = 6, width = 8)
 
 mydf_all %>% filter(cov_setting=="group",act_setting=="medium",
                     family=="poisson(log)",p==500,
                     pred_error<2) %>%
-  ggplot(aes(x=Method,y=pred_error,fill=Method)) +
+  ggplot(aes(x=Method,y=rMSPE,fill=Method)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   # ggh4x::facet_grid2(cov_setting~act_setting, scales = "free_y",independent = "y") +
   # facet_grid(family~p, scales = "free_y",labeller = short_fam_names2) +
   coord_cartesian(ylim=c(0,1.75)) +
-  theme(legend.position = "none") +
-  labs(y="prediction error")
+  theme(legend.position = "none") 
+  # labs(y="prediction error")
 
 
 # plot families rDev
@@ -283,20 +283,36 @@ mydf_time_sum_fam <- rbind(mydf_time_sum_fam,
                                   is_ref=TRUE,family="binomial(cloglog)")
 )
 mydf_time_sum_fam$Method <- factor(mydf_time_sum_fam$Method,levels=c(rank_methods,"O(plog(p))","O(p)","O(log(p))"))
+
+my_colors <- c(scales::hue_pal()(length(rank_methods)+1)[1:length(rank_methods)],"darkgrey","darkgrey","darkgrey")
+names(my_colors) <- levels(mydf_time_sum_fam$Method)
+my_shapes <- c(15,15,15,15,15,16,16,17,17,17,17,20,20,20)
+names(my_shapes) <- levels(mydf_time_sum_fam$Method)
+
+# mydf_time_sum_fam <- mydf_time_sum_fam %>% 
+#   mutate("meth_type" = ifelse(Method %in% c("Ridge","LASSO","AdLASSO","ElNet","SIS"),"sparse",
+#                               ifelse(Method %in% c("RF","SVM"),"non-parametric","dense")))
+
 mydf_time_sum_fam %>% 
-  ggplot(aes(x=p,y=Time,col=Method,linetype=is_ref)) +
+  ggplot(aes(x=p,y=Time,color=Method,shape=Method,linetype=is_ref)) +
   geom_line() +
   geom_point() +
-  # facet_grid(family~., scales = "free_y") +
-  scale_color_manual(values=c(scales::hue_pal()(12)[1:11],"darkgrey","darkgrey","darkgrey"))+ # careful about length!
+  scale_color_manual(name="Method",
+                     values=my_colors,
+                     breaks = rank_methods,
+                     labels=rank_methods) +
+  scale_shape_manual(name = "Method",
+                     labels = rank_methods,
+                     breaks = rank_methods,
+                     values = my_shapes) +
   scale_x_log10() +
   scale_y_log10() +
-  geom_text_repel(data = filter(mydf_time_sum_fam,p==10000),
-                  aes(x=p,y=Time,label=Method),show.legend = FALSE) +
-  theme(legend.position="none") +
+  geom_text_repel(data = filter(mydf_time_sum_fam,p==10000,startsWith(as.character(Method),"O(")),
+                  aes(x=p,y=Time,label=Method),show.legend = FALSE,nudge_y=0.1) +
   facet_grid(.~family) +
-  labs(y="Time in s")
-# ggsave(paste0("../plots/glm_Time_p_families.pdf"), height = 3, width = 8)
+  labs(y="Time in s") +
+  guides(linetype = "none") 
+# ggsave(paste0("../plots/glm_Time_p_families.pdf"), height = 3.6, width = 8)
 
 mydf_time_sum <- mydf_all %>% filter(Method %in% rank_methods,act_setting=="medium",
                                      # family%in%show_families,
@@ -352,11 +368,10 @@ OVtab[,c(3,5,7)] <- apply(OVtab[,c(3,5,7)],2,function(col)paste0("(",col,")"))
 OVtab
 kable(OVtab,format = "latex",booktabs=TRUE)
 
-
 # special plots
 
 mydf_all %>% filter(Method %in% show_methods,p==2000,cov_setting=="group",
-                    family %in%show_families) %>%
+                    family %in% show_families) %>%
   pivot_longer(c(pred_error,rMSLE),names_to = "Measure",values_to = "Value") %>% 
   ggplot(aes(x=Method,y=Value,fill=Method)) +
   geom_boxplot() +
@@ -379,10 +394,10 @@ for(i in 1:length(cols)){
     rk_methods <- rank_methods
   }
   tmp <- mydf_all  %>% filter(Method %in% rk_methods) %>%
-    select(Method,rep,setting, "score" = cols[i]) %>%
+    dplyr::select(Method,rep,setting, "score" = cols[i]) %>%
     mutate(score = score*signs[i]) %>%
     pivot_wider(names_from = Method, values_from = score) %>%
-    select(-c(rep,setting)) %>%
+    dplyr::select(-c(rep,setting)) %>%
     tsutils::nemenyi(plottype = "none", conf.level = 0.99)
   tmp2 <- t(rbind("avg_rank" = tmp$means, "lower"= tmp$intervals[1,], "upper"= tmp$intervals[2,]))
   nem_ranks <- rbind(nem_ranks,data.frame("score" = cols[i],tmp2, Method=row.names(tmp2)))
@@ -422,3 +437,105 @@ p_test <- ggplot(nem_ranks_high, aes(x = Method, y = avg_rank, color = is_best))
   labs(x = "Method", y = "Mean ranks")
 p_test
 # ggsave("../plots/benchmark_ranks.pdf", height = 5, width = 8)
+
+
+# show rMSPE for binom logit in all relevant plots: sparsity, COV, p
+
+my_df_MSE_binom <- mydf_all %>% 
+  filter(Method %in% c(show_methods,"SPAR res avg"),
+                    p==2000,cov_setting=="group",
+                    family == "binomial(logit)") %>% 
+  mutate(tmp_facet = act_setting)
+  
+my_df_MSE_binom <- rbind(my_df_MSE_binom,
+                         mydf_all %>% 
+  filter(Method %in% c(show_methods,"SPAR res avg"),
+         p==2000,cov_setting!="group",act_setting=="medium",
+         family == "binomial(logit)") %>% 
+  mutate(tmp_facet = cov_setting)
+)
+my_df_MSE_binom <- rbind(my_df_MSE_binom,
+                         mydf_all %>% 
+                           filter(Method %in% c(show_methods,"SPAR res avg"),
+                                  cov_setting=="group",act_setting=="medium",
+                                  family == "binomial(logit)") %>% 
+                           mutate(tmp_facet = as.character(p))
+)
+
+my_df_MSE_binom$tmp_facet <- factor(my_df_MSE_binom$tmp_facet,levels=c("sparse","medium","dense","ar1","comsym","ind","500","2000","10000"))
+
+my_df_MSE_binom %>% filter(!is.na(tmp_facet)) %>%
+  ggplot(aes(x=Method,y=rMSPE,fill=Method)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+  facet_wrap(.~na.omit(tmp_facet), nrow=3,ncol=3) +
+  theme(legend.position = "none")
+# ggsave(paste0("../plots/glm_rMSPE_binom.pdf"), height = 5, width = 8)
+
+my_df_MSE_binom %>% filter(!is.na(tmp_facet)) %>%
+  ggplot(aes(x=Method,y=AUC,fill=Method)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+  facet_wrap(.~na.omit(tmp_facet), nrow=3,ncol=3) +
+  theme(legend.position = "none")
+# ggsave(paste0("../plots/glm_AUC_binom.pdf"), height = 5, width = 8)
+
+
+# # # add ranks plots/table for each Cov structure; either response or in supple- ment 
+
+mydf_all %>% filter(Method %in% show_methods,p==2000,act_setting=="medium",
+                    pred_error<1.5) %>%
+  ggplot(aes(x=Method,y=rMSPE,fill=Method)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  facet_grid(family~cov_setting, scales = "free_y",labeller = short_fam_names1) +
+  theme(legend.position = "none")
+
+
+n_showm <- length(rank_methods) +1
+mydf_COV_rank <- mydf_all %>% 
+  filter(Method %in% c(rank_methods,"SPAR res avg"),p==2000,act_setting=="medium") %>% 
+  group_by(rep,setting) %>% mutate(rank_rMSPE=rank(rMSPE),
+                                   rank_LE = rank(rMSLE), 
+                                   rank_pAUC = n_showm + 1 - rank(pAUC),
+                                   rank_AUC = n_showm + 1 - rank(AUC))
+rank_tab_COV <- mydf_COV_rank %>% group_by(Method,family,cov_setting) %>% 
+  summarise(mean_rank_rMSPE = mean(rank_rMSPE), se_rank_rMSPE = sd(rank_rMSPE)/sqrt(100),
+            mean_rank_LE = mean(rank_LE), se_rank_LE = sd(rank_LE)/sqrt(100),
+            mean_rank_pAUC = mean(rank_pAUC), se_rank_pAUC = sd(rank_pAUC)/sqrt(100),
+            mean_rank_AUC = mean(rank_AUC), se_rank_AUC = sd(rank_AUC)/sqrt(100)) 
+
+my_colors <- scales::hue_pal()(length(rank_methods)+1+1)[1:(length(rank_methods)+1)]
+names(my_colors) <- c(rank_methods,"SPAR res avg")
+my_shapes <- c(15,15,15,15,15,16,16,17,17,17,17,17)
+names(my_shapes) <- c(rank_methods,"SPAR res avg")
+
+rank_tab_COV$cov_setting <- factor(rank_tab_COV$cov_setting,levels=c("ar1","group","comsym","ind"))
+
+
+rank_tab_COV <- rank_tab_COV %>% mutate(mean_rank=mean_rank_rMSPE,
+                                        plot_family = ifelse(family %in% c("binomial(cloglog)","binomial(logit)"), paste0(family,"_rMSPE"),family))
+rank_tab_COV <- rbind(rank_tab_COV,
+                      rank_tab_COV %>% filter(family %in% c("binomial(cloglog)","binomial(logit)")) 
+                      %>% mutate(mean_rank=mean_rank_AUC,
+                                 plot_family = paste0(family,"_AUC")))
+rank_tab_COV %>%
+  ggplot(aes(x=cov_setting,y=mean_rank,
+             col=Method,group=Method,shape=Method)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual(name="Method",
+                     values=my_colors,
+                     breaks = c(rank_methods,"SPAR res avg"),
+                     labels=c(rank_methods,"SPAR res avg")) +
+  scale_shape_manual(name = "Method",
+                     labels = c(rank_methods,"SPAR res avg"),
+                     breaks = c(rank_methods,"SPAR res avg"),
+                     values = my_shapes) +
+  # geom_errorbar(aes(ymin = mean_rank_rMSPE - se_rank_rMSPE,ymax = mean_rank_rMSPE + se_rank_rMSPE),size=0.2,width=0.1) + 
+  facet_wrap(.~plot_family,ncol=2) +
+  labs(x="covariance setting",y="mean rank") +
+  guides(linetype = "none") 
+
+# ggsave(paste0("../plots/glm_ranks_cov.pdf"), height = 6, width = 6)
+

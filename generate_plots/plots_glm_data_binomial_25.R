@@ -3,7 +3,7 @@
 
 pacman::p_load(dplyr, ggplot2, tidyr, ggrepel,knitr,kableExtra)
 
-resobj <- readRDS("../saved_results/SPARglm_data_binom_nset4_reps100_nmeth20.rds")
+resobj <- readRDS("../saved_results/SPARglm_data_binom_25_nset4_reps100_nmeth20.rds")
 res <- resobj$res
 methods <- dimnames(res)[[3]]
 resobj$dataset_sizes
@@ -93,7 +93,7 @@ mydf_all %>% filter(Method %in% show_methods,dataset%in%c("lymphoma","lymphoma_b
 
 
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=AUC,fill=Method)) +
   geom_boxplot() +
@@ -104,8 +104,9 @@ mydf_all %>% filter(Method %in% show_methods,
   coord_cartesian(ylim=c(0.7,1.0))
 # ggsave(paste0("../plots/glm_databinom_AUC.pdf"), height = 6, width = 8)
 
+
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=rMSPE,fill=Method)) +
   geom_boxplot() +
@@ -117,7 +118,7 @@ mydf_all %>% filter(Method %in% show_methods,
 
 
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=rDev,fill=Method)) +
   geom_boxplot() +
@@ -128,7 +129,7 @@ mydf_all %>% filter(Method %in% show_methods,
   coord_cartesian(ylim=c(0,1.0))
 
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=rDev_tr,fill=Method)) +
   geom_boxplot() +
@@ -140,7 +141,7 @@ mydf_all %>% filter(Method %in% show_methods,
 
 
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=bAcc,fill=Method)) +
   geom_boxplot() +
@@ -151,7 +152,7 @@ mydf_all %>% filter(Method %in% show_methods,
   coord_cartesian(ylim=c(0.4,1.0))
 
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=NumAct,fill=Method)) +
   geom_boxplot() +
@@ -161,7 +162,7 @@ mydf_all %>% filter(Method %in% show_methods,
   theme(legend.position = "none")
 
 mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>%
   ggplot(aes(x=Method,y=Time,colour=Method)) +
   geom_boxplot() +
@@ -172,7 +173,7 @@ mydf_all %>% filter(Method %in% show_methods,
   scale_y_log10()
 
 print(mydf_all %>% filter(Method %in% show_methods,
-                    dataset!="darwin_big",
+                    # dataset!="darwin_big",
                     link=="logit") %>% group_by(dataset,Method) %>% summarize(med_time=median(Time)),
       n=30)
 
@@ -181,7 +182,7 @@ print(mydf_all %>% filter(Method %in% show_methods,
 # each dataset
 n_showm <- length(rank_methods)
 myrankdf <- mydf_all %>% filter(Method %in% rank_methods,
-                                dataset!="darwin_big",
+                                dataset!="lymphoma_big",
                                 link=="logit") %>% 
   group_by(rep,dataset) %>% mutate(rank_AUC=n_showm + 1 - rank(AUC) ,rank_rMSPE=rank(rMSPE), rank_bAcc = n_showm + 1 - rank(bAcc))
 
@@ -209,11 +210,11 @@ kable(RankTab,format = "latex",booktabs=TRUE) %>%
 
 n_showm <- length(rank_methods)
 mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
-                               dataset!="darwin_big",
+                               dataset!="lymphoma_big",
                                link==ifelse(Method=="TARP"&dataset=="lymphoma_big","cloglog","logit")) %>% 
-  group_by(Method,dataset) %>% summarise(mean_AUC=mean(AUC,na.rm=TRUE),se_AUC=sd(AUC,na.rm=TRUE)/sqrt(100),
-                                   mean_rMSPE=mean(rMSPE,na.rm=TRUE),se_rMSPE=sd(rMSPE,na.rm=TRUE)/sqrt(100),
-                                   mean_bAcc=mean(bAcc,na.rm=TRUE),se_bAcc=sd(bAcc,na.rm=TRUE)/sqrt(100))
+  group_by(Method,dataset) %>% summarise(mean_AUC=mean(AUC,na.rm=TRUE),sd_AUC=sd(AUC,na.rm=TRUE),
+                                   mean_rMSPE=mean(rMSPE,na.rm=TRUE),sd_rMSPE=sd(rMSPE,na.rm=TRUE),
+                                   mean_bAcc=mean(bAcc,na.rm=TRUE),sd_bAcc=sd(bAcc,na.rm=TRUE))
 SumTab <- mysumdf %>% pivot_wider(names_from = dataset,values_from = c(3:8),names_vary = "slowest")
 SumTab[,-1] <- round(SumTab[,-1],3)
 SumTab[,1+1:9*2] <- apply(SumTab[,1+1:9*2],2,function(col)paste0("(",col,")"))
@@ -222,15 +223,55 @@ colnames(SumTab) <- c("Method",rep(c("mean","se"),10))
 SumTab
 kable(SumTab,format = "latex",booktabs=TRUE) %>% 
   add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2,"bAcc"=2, "AUC"=2,"rMSPE"=2,"bAcc"=2, "AUC"=2,"rMSPE"=2,"bAcc"=2,"rMSPE"=2)) %>%
-  add_header_above(c(" "=1, "lymphoma"=6,"lymphoma_big"=6,"darwin"=6,"tribology"=2))
+  add_header_above(c(" "=1, "lymphoma"=6,"darwin"=6,"darwin_big"=6,"tribology"=2))
 
 
+colnames(SumTab)
+str(SumTab)
 # smaller version with AUC + rMSPE
-kable(SumTab[,c(1,20,21,14:17,2:5,8:11)],format = "latex",booktabs=TRUE) %>% 
+kable(SumTab[,c(1,20,21,2:5,8:11,14:17)],format = "latex",booktabs=TRUE) %>% 
   add_header_above(c(" "=1, "rMSPE"=2,"AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
-  add_header_above(c(" "=1, "FTIR spectra"=2,"Darwin"=4,"DLBCL"=4,"DLBCL_extended"=4))
+  add_header_above(c(" "=1, "FTIR spectra"=2,"DLBCL"=4,"Darwin"=4,"Darwin_extended"=4))
 
-# copy output latex code to latex file
+# final version with AUC + rMSPE, and sd instead of se, and no extended data set
+kable(SumTab[,c(1,20,21,8:11,2:5)],format = "latex",booktabs=TRUE) %>% 
+  add_header_above(c(" "=1, "rMSPE"=2,"AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
+  add_header_above(c(" "=1, "FTIR spectra"=2,"Darwin"=4,"DLBCL"=4))
 
 
-kable(t(SumTab[c(4,6,7,10,11),c(1,20,21)]),format = "latex",booktabs=TRUE)
+
+# # # # full table Appendix/response for all links
+
+# only for lymphoma cloglog link
+
+n_showm <- length(rank_methods)
+mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
+                               dataset=="lymphoma") %>% 
+  group_by(Method,dataset,link) %>% summarise(mean_AUC=mean(AUC,na.rm=TRUE),sd_AUC=sd(AUC,na.rm=TRUE),
+                                         mean_rMSPE=mean(rMSPE,na.rm=TRUE),sd_rMSPE=sd(rMSPE,na.rm=TRUE))
+
+mysumdf
+SumTab <- mysumdf[,-2] %>% pivot_wider(names_from = link,values_from = c(3:6),names_vary = "slowest")
+SumTab[,-1] <- round(SumTab[,-1],3)
+SumTab[,1+1:4*2] <- apply(SumTab[,1+1:4*2],2,function(col)paste0("(",col,")"))
+kable(SumTab,format = "latex",booktabs=TRUE) %>% 
+  add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
+  add_header_above(c(" "=1, "cloglog link"=4,"logit link"=4))
+
+# # copy output latex code to latex file (not used)
+# kable(t(SumTab[c(4,6,7,10,11),c(1,20,21)]),format = "latex",booktabs=TRUE)
+
+
+
+# computing times on applications
+
+my_time_df <- mydf_all %>% filter(Method %in% rank_methods,
+                                  dataset %in% c("lymphoma","darwin"))  %>% 
+  group_by(Method,dataset) %>% 
+  summarise(mean_time=mean(Time,na.rm=TRUE),sd_time=sd(Time,na.rm=TRUE))
+TimeTab <- my_time_df %>% pivot_wider(names_from = dataset,values_from = c(3,4),names_vary = "slowest")
+
+TimeTab <- cbind(readRDS("../saved_results/table_tribology_time.rds"),TimeTab[,-1])
+TimeTab[,-1] <- round(TimeTab[,-1],3)
+TimeTab[,1+1:3*2] <- apply(TimeTab[,1+1:3*2],2,function(col)paste0("(",col,")"))
+kable(TimeTab[,c(1,2,3,6,7,4,5)],format = "latex",booktabs=TRUE) 

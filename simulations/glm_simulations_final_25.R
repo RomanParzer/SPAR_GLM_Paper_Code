@@ -38,6 +38,7 @@ methods <- list("Ridge"=function(x,y,xtest,family){myElNet(x,y,xtest,alpha=0,fam
 
 measures <- c("AUC","bAcc","Acc","rMSPE","rDev","rDev_tr","rMSLE","pAUC","Precision","Recall","Sign_ratio_Scr","Cor_Scr","NumAct","Time")
 
+# diff sparsity
 simulation_settings <- tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("group"),
                               signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                               family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log)))
@@ -52,6 +53,7 @@ simulation_settings <- rbind(simulation_settings,
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
+# cov
 simulation_settings <- rbind(simulation_settings,
                              tibble(n=200, p=c(2000),ntest=1000, act_setting="medium", cov_setting=c("ar1"),
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
@@ -67,6 +69,7 @@ simulation_settings <- rbind(simulation_settings,
                                     signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
                                     family=list(gaussian(identity),gaussian(log),binomial(logit),binomial(cloglog),poisson(log))))
 
+# p
 simulation_settings <- rbind(simulation_settings,
                              tibble(n=200, p=c(500),ntest=200, act_setting="medium", cov_setting=c("group"),
                               signal_strength=c(10,1/8,100,1000,1/4), avg_exp = c(1,10,0.5,0.7,10),
@@ -101,8 +104,8 @@ clusterEvalQ(my.cluster, {
   source("../functions/multi_assign.R")
 })
 
-
-parres <- foreach(j = 1:nset) %:%
+# i <- j <- 3
+foreach(j = 1:nset) %:%
   foreach(i=1:nrep) %dopar% {
     parresi <- matrix(c(0),nmeas,nmethods)
     c(n,p,ntest,act_setting,cov_setting,signal_strength,avg_exp,family,a) %<-% simulation_settings[j,]
@@ -114,11 +117,11 @@ parres <- foreach(j = 1:nset) %:%
     xtest <- data$xtest
     ytest <- data$ytest
     
-    rDev_const <- sum(family$dev.resids(ytest,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),ntest),1))
-    rDev_const_tr <- sum(family$dev.resids(y,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),n),1))
+    rDev_const <- sum(family$dev.resids(ytest,rep(mean(y),ntest),1))
+    rDev_const_tr <- sum(family$dev.resids(y,rep(mean(y),n),1))
     
     rMSPE_const <- mean((ytest-mean(y))^2)
-    rMSLE_const <- mean((xtest%*%data$beta + data$alpha)^2)
+    rMSLE_const <- mean((xtest%*%data$beta + data$alpha - family$linkfun(mean(y)))^2)
     
     # k <- 15
     for (k in 1:nmethods) {
@@ -182,19 +185,21 @@ parres <- foreach(j = 1:nset) %:%
     }
     # res[i,,,j] <- parresi
     # res[i,,,j]
+    # res[i,c(1,4),,j]
     cat(sprintf('Finished rep %d / %d for setting %d / %d at %s.\n',i,nrep,j,nset,Sys.time()))
     warnings()
+    saveRDS(parresi,paste0("../tmp_saved_files/GLM_Sims_i",i,"j",j,".rds"))
     parresi
   }
 
 for (j in 1:nset) {
   for (i in 1:nrep) {
-    res[i,,,j] <- parres[[j]][[i]]
+    res[i,,,j] <- readRDS(paste0("../tmp_saved_files/GLM_Sims_i",i,"j",j,".rds"))
   }
 }
 
 saveRDS(res, 
-        file = sprintf("../saved_results/SPARglm_sims_nset%d_reps%d_nmeth%d.rds",nset,nrep,nmethods))
+        file = sprintf("../saved_results/SPARglm_sims_25_nset%d_reps%d_nmeth%d.rds",nset,nrep,nmethods))
 parallel::stopCluster(cl = my.cluster)
 
 warnings()

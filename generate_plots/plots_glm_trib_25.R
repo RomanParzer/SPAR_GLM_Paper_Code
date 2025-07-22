@@ -3,7 +3,7 @@
 
 pacman::p_load(dplyr, ggplot2, tidyr, ggrepel,knitr,kableExtra)
 
-resobj <- readRDS("../saved_results/SPARglm_data_trib_nset1_reps100_nmeth20.rds")
+resobj <- readRDS("../saved_results/SPARglm_data_trib_25_nset1_reps100_nmeth20.rds")
 
 res <- resobj$res
 methods <- dimnames(res)[[3]]
@@ -95,6 +95,7 @@ mydf_all %>% filter(Method %in% show_methods,
   coord_cartesian(ylim=c(0,1))
 # ggsave(paste0("../plots/glm_data_trib_rMSPE.pdf"), height = 6, width = 10)
 
+
 mydf_all %>% filter(Method %in% show_methods,
                     flink=="gaussian(log)") %>%
   ggplot(aes(x=Method,y=rDev,fill=Method)) +
@@ -150,9 +151,39 @@ myranksumdf
 n_showm <- length(rank_methods)
 mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
                                 flink=="gaussian(log)") %>% group_by(Method,dataset) %>% 
-  summarise(mean_rMSPE=mean(rMSPE,na.rm=TRUE),se_rMSPE=sd(rMSPE,na.rm=TRUE)/sqrt(100))
+  summarise(mean_rMSPE=mean(rMSPE,na.rm=TRUE),sd_rMSPE=sd(rMSPE,na.rm=TRUE))
 SumTab <- mysumdf[,-2]
 SumTab[,-1] <- round(SumTab[,-1],3)
 SumTab[,3] <- apply(SumTab[,3],2,function(col)paste0("(",col,")"))
 SumTab
 # saveRDS(SumTab,"../saved_results/table_tribology_rMSPE.rds")
+
+# high sd of eg AdLASSO due to high outliers
+# mydf_all %>% filter(Method== "AdLASSO",
+#                     flink=="gaussian(log)") 
+
+# # # summarize for all links
+n_showm <- length(rank_methods)
+mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
+                               ) %>% group_by(Method,flink,dataset) %>% 
+  summarise(mean_rMSPE=mean(rMSPE,na.rm=TRUE),sd_rMSPE=sd(rMSPE,na.rm=TRUE))
+
+mysumdf <- mysumdf %>% pivot_wider(names_from = flink,values_from = c(4,5),names_vary = "slowest")
+
+SumTab <- mysumdf[,-2]
+SumTab[,-1] <- round(SumTab[,-1],3)
+SumTab <- SumTab[,c(1,4,5,2,3,6,7)]
+for (j in c(3,5,7)) {
+  SumTab[,j] <- apply(SumTab[,j],2,function(col)paste0("(",col,")"))
+}
+SumTab
+kable(SumTab,format = "latex",booktabs=TRUE) %>% 
+  add_header_above(c(" "=1, "gaussian(log)"=2,"poisson(log)"=2,"quasipoisson(log)"=2))
+
+
+
+my_time_df <- mydf_all %>% filter(Method %in% rank_methods)  %>% 
+  group_by(Method,dataset) %>% 
+  summarise(mean_time=mean(Time,na.rm=TRUE),sd_time=sd(Time,na.rm=TRUE))
+TimeTab <- my_time_df %>% pivot_wider(names_from = dataset,values_from = c(3,4),names_vary = "slowest")
+saveRDS(TimeTab,"../saved_results/table_tribology_time.rds")
