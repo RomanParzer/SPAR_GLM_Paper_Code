@@ -51,7 +51,7 @@ for (k in 2:nrow(resobj$dataset_sizes)) {
                                Time=pivot_longer(data.frame(res[,10,,1,k],rep=1:100),1:(dim(res)[3]),names_to="Method",values_to="Time")$Time,
                                resobj$dataset_sizes[k,],
                                link="logit"))
-  if (k<=2) {
+  if (k<=4) { # now also for darwin
     mydf_all <- rbind(mydf_all,
                       data.frame(pivot_longer(data.frame(res[,1,,2,k],rep=1:100),1:(dim(res)[3]),names_to="Method",values_to="AUC"),
                                  Acc=pivot_longer(data.frame(res[,2,,2,k],rep=1:100),1:(dim(res)[3]),names_to="Method",values_to="Acc")$Acc,
@@ -91,6 +91,14 @@ mydf_all %>% filter(Method %in% show_methods,dataset%in%c("lymphoma","lymphoma_b
 # logit always better, only for TARP on lymphoma_big, the cloglog link is better than logit
 # so always use logit
 
+mydf_all %>% filter(Method %in% show_methods,!(dataset%in%c("lymphoma","lymphoma_big"))) %>%
+  ggplot(aes(x=link,y=rMSPE,fill=Method)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  # ggh4x::facet_grid2(cov_setting~act_setting, scales = "free_y",independent = "y") +
+  facet_grid(dataset~Method, scales = "free_y") +
+  theme(legend.position = "none")
+# here also mostly logit better, except for Ridge, LASSO on Darwin, and TARP on darwin big
 
 mydf_all %>% filter(Method %in% show_methods,
                     # dataset!="darwin_big",
@@ -177,8 +185,7 @@ print(mydf_all %>% filter(Method %in% show_methods,
                     link=="logit") %>% group_by(dataset,Method) %>% summarize(med_time=median(Time)),
       n=30)
 
-# # rank tables, combine with tribology
-
+# # rank tables, combine with tribology; not used in paper
 # each dataset
 n_showm <- length(rank_methods)
 myrankdf <- mydf_all %>% filter(Method %in% rank_methods,
@@ -206,7 +213,7 @@ kable(RankTab,format = "latex",booktabs=TRUE) %>%
   add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2,"bAcc"=2, "AUC"=2,"rMSPE"=2,"bAcc"=2, "AUC"=2,"rMSPE"=2,"bAcc"=2)) %>%
   add_header_above(c(" "=1, "lymphoma"=6,"lymphoma_big"=6,"darwin"=6))
 
-# # # summary table, combine with tribology, prefer this for datasets
+# # # summary table, combine with tribology, prefer this for datasets; used in paper
 
 n_showm <- length(rank_methods)
 mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
@@ -225,9 +232,7 @@ kable(SumTab,format = "latex",booktabs=TRUE) %>%
   add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2,"bAcc"=2, "AUC"=2,"rMSPE"=2,"bAcc"=2, "AUC"=2,"rMSPE"=2,"bAcc"=2,"rMSPE"=2)) %>%
   add_header_above(c(" "=1, "lymphoma"=6,"darwin"=6,"darwin_big"=6,"tribology"=2))
 
-
 colnames(SumTab)
-str(SumTab)
 # smaller version with AUC + rMSPE
 kable(SumTab[,c(1,20,21,2:5,8:11,14:17)],format = "latex",booktabs=TRUE) %>% 
   add_header_above(c(" "=1, "rMSPE"=2,"AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
@@ -239,10 +244,9 @@ kable(SumTab[,c(1,20,21,8:11,2:5)],format = "latex",booktabs=TRUE) %>%
   add_header_above(c(" "=1, "FTIR spectra"=2,"Darwin"=4,"DLBCL"=4))
 
 
-
 # # # # full table Appendix/response for all links
 
-# only for lymphoma cloglog link
+# lymphoma cloglog link
 
 n_showm <- length(rank_methods)
 mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
@@ -258,9 +262,20 @@ kable(SumTab,format = "latex",booktabs=TRUE) %>%
   add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
   add_header_above(c(" "=1, "cloglog link"=4,"logit link"=4))
 
-# # copy output latex code to latex file (not used)
-# kable(t(SumTab[c(4,6,7,10,11),c(1,20,21)]),format = "latex",booktabs=TRUE)
+# darwin cloglog link
+n_showm <- length(rank_methods)
+mysumdf <- mydf_all %>% filter(Method %in% rank_methods,
+                               dataset=="darwin") %>% 
+  group_by(Method,dataset,link) %>% summarise(mean_AUC=mean(AUC,na.rm=TRUE),sd_AUC=sd(AUC,na.rm=TRUE),
+                                              mean_rMSPE=mean(rMSPE,na.rm=TRUE),sd_rMSPE=sd(rMSPE,na.rm=TRUE))
 
+mysumdf
+SumTab <- mysumdf[,-2] %>% pivot_wider(names_from = link,values_from = c(3:6),names_vary = "slowest")
+SumTab[,-1] <- round(SumTab[,-1],3)
+SumTab[,1+1:4*2] <- apply(SumTab[,1+1:4*2],2,function(col)paste0("(",col,")"))
+kable(SumTab,format = "latex",booktabs=TRUE) %>% 
+  add_header_above(c(" "=1, "AUC"=2,"rMSPE"=2, "AUC"=2,"rMSPE"=2)) %>%
+  add_header_above(c(" "=1, "cloglog link"=4,"logit link"=4))
 
 
 # computing times on applications

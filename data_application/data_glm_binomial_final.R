@@ -142,7 +142,8 @@ foreach(i=1:nrep) %dopar% {
       }
     }
     
-    if (dataname%in% c("lymphoma","lymphoma_big")) {
+    # if (dataname%in% c("lymphoma","lymphoma_big")) { # use cloglog link for all
+    if (TRUE) {
       family <- binomial(cloglog)
       rDev_const <- sum(family$dev.resids(ytest,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),ntest),1))
       rDev_const_tr <- sum(family$dev.resids(y,rep(family$linkinv(coef(glm(y~1,family = family,start=1))),n),1))
